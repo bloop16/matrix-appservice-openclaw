@@ -60,6 +60,26 @@ describe('SessionStore', () => {
     expect(await store.getAppState('missing')).toBeNull();
   });
 
+  it('getRoomsForAgent returns rooms for an agent', async () => {
+    const rooms = await store.getRoomsForAgent('openclaw/test');
+    expect(rooms.length).toBeGreaterThanOrEqual(1);
+    expect(rooms[0]?.agentId).toBe('openclaw/test');
+  });
+
+  it('getRoomsByUser returns rooms with agent', async () => {
+    const rooms = await store.getRoomsByUser('@user:example.com');
+    expect(rooms.length).toBeGreaterThanOrEqual(1);
+    expect(rooms[0]?.agent).toBeDefined();
+    expect(rooms[0]?.agent.id).toBe('openclaw/test');
+  });
+
+  it('getRoom returns a room with agent', async () => {
+    const room = await store.getRoom('!test:example.com');
+    expect(room).not.toBeNull();
+    expect(room?.agent).toBeDefined();
+    expect(room?.matrixUserId).toBe('@user:example.com');
+  });
+
   it('soft-deletes an agent', async () => {
     await store.softDeleteAgent('openclaw/test');
     const agent = await prisma.agent.findUnique({ where: { id: 'openclaw/test' } });
@@ -69,5 +89,20 @@ describe('SessionStore', () => {
   it('getActiveAgents excludes soft-deleted', async () => {
     const active = await store.getActiveAgents();
     expect(active.find((a) => a.id === 'openclaw/test')).toBeUndefined();
+  });
+
+  it('upsertAgent resets deletedAt when agent returns', async () => {
+    await store.softDeleteAgent('openclaw/test');
+    let agent = await prisma.agent.findUnique({ where: { id: 'openclaw/test' } });
+    expect(agent?.deletedAt).not.toBeNull();
+
+    await store.upsertAgent({
+      id: 'openclaw/test',
+      matrixUserId: '@openclaw-test:example.com',
+      displayName: 'test-updated',
+      syncedAt: new Date(),
+    });
+    agent = await prisma.agent.findUnique({ where: { id: 'openclaw/test' } });
+    expect(agent?.deletedAt).toBeNull();
   });
 });

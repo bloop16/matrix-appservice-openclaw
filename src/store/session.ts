@@ -66,10 +66,10 @@ export class SessionStore {
   async getRecentMessages(roomId: string, limit: number) {
     const msgs = await this.db.message.findMany({
       where: { roomId },
-      orderBy: { timestamp: 'asc' },
-      take: -limit,
+      orderBy: { timestamp: 'desc' },
+      take: limit,
     });
-    return msgs;
+    return msgs.reverse();
   }
 
   async isDuplicateEvent(eventId: string): Promise<boolean> {
