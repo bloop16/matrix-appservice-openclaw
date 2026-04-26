@@ -15,6 +15,8 @@ model Agent {
   rooms        Room[]
 }
 
+// ON DELETE RESTRICT is intentional: agent removal is soft-delete only (deletedAt).
+// Hard deletion of Agent rows is not supported in v1.
 model Room {
   id           String    @id
   agentId      String
@@ -23,6 +25,9 @@ model Room {
   title        String?
   createdAt    DateTime  @default(now())
   messages     Message[]
+
+  @@index([agentId])
+  @@index([matrixUserId])
 }
 
 model Message {
@@ -33,6 +38,8 @@ model Message {
   role      String
   content   String
   timestamp DateTime @default(now())
+
+  @@index([roomId, timestamp])
 }
 
 model AppState {
