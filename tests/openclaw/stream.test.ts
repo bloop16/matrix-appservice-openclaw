@@ -13,6 +13,15 @@ function makeStream(lines: string[]): ReadableStream<Uint8Array> {
   });
 }
 
+function makeStreamRaw(raw: string): ReadableStream<Uint8Array> {
+  return new ReadableStream({
+    start(controller) {
+      controller.enqueue(new TextEncoder().encode(raw));
+      controller.close();
+    },
+  });
+}
+
 describe('collectStream', () => {
   it('collects chunks into a full response', async () => {
     const stream = makeStream([
@@ -42,5 +51,22 @@ describe('collectStream', () => {
     ]);
     const result = await collectStream(stream);
     expect(result.text).toBe('Hi');
+  });
+
+  it('detects [DONE] in final buffer when no trailing newline', async () => {
+    const raw =
+      'data: {"choices":[{"delta":{"content":"hello"}}]}\ndata: [DONE]';
+    const stream = makeStreamRaw(raw);
+    const result = await collectStream(stream);
+    expect(result.text).toBe('hello');
+    expect(result.interrupted).toBe(false);
+  });
+
+  it('extracts content from final buffer when no trailing newline and no [DONE]', async () => {
+    const raw = 'data: {"choices":[{"delta":{"content":"world"}}]}';
+    const stream = makeStreamRaw(raw);
+    const result = await collectStream(stream);
+    expect(result.text).toBe('world');
+    expect(result.interrupted).toBe(true);
   });
 });
