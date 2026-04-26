@@ -1,0 +1,18 @@
+homeserver:
+  url: "https://matrix.example.com"
+  domain: "example.com"
+
+openclaw:
+  url: "http://127.0.0.1:18789"
+  token: "your-gateway-token"
+  agentSyncIntervalMinutes: 10
+  streamTimeoutSeconds: 60
+  maxHistoryMessages: 50
+
+appservice:
+  port: 9993
+  bindAddress: "127.0.0.1"
+  controlRoomAlias: "openclaw-control"
+
+database:
+  url: "postgresql://user:password@localhost:5432/matrix_openclaw"
