@@ -1,0 +1,41 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Agent {
+  id           String    @id
+  matrixUserId String    @unique
+  displayName  String
+  syncedAt     DateTime
+  deletedAt    DateTime?
+  rooms        Room[]
+}
+
+model Room {
+  id           String    @id
+  agentId      String
+  matrixUserId String
+  agent        Agent     @relation(fields: [agentId], references: [id])
+  title        String?
+  createdAt    DateTime  @default(now())
+  messages     Message[]
+}
+
+model Message {
+  id        Int      @id @default(autoincrement())
+  roomId    String
+  room      Room     @relation(fields: [roomId], references: [id])
+  eventId   String?  @unique
+  role      String
+  content   String
+  timestamp DateTime @default(now())
+}
+
+model AppState {
+  key   String @id
+  value String
+}
