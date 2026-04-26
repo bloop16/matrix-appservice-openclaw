@@ -160,8 +160,9 @@ async function ensureControlRoom(): Promise<void> {
 
 async function main(): Promise<void> {
   await agentSync.sync();
+  await bridge.initialise();
   await ensureControlRoom();
-  await bridge.run(config.appservice.port);
+  await bridge.listen(config.appservice.port, config.appservice.bindAddress);
   const _syncHandle = agentSync.startPeriodicSync(config.openclaw.agentSyncIntervalMinutes);
   console.log(`Appservice running on port ${config.appservice.port}`);
 }
