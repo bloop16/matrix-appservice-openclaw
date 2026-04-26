@@ -1,18 +1,19 @@
 {
   "name": "matrix-appservice-openclaw",
   "version": "1.0.0",
-  "description": "",
+  "description": "Matrix Appservice bridging Openclaw AI agents to a Synapse homeserver",
   "type": "module",
   "main": "dist/index.js",
-  "directories": {
-    "doc": "docs"
+  "engines": {
+    "node": ">=22"
   },
   "scripts": {
     "start": "tsx src/index.ts",
     "register": "tsx src/register.ts",
     "build": "tsc",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "keywords": [],
   "author": "",
@@ -26,6 +27,7 @@
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^25.6.0",
+    "@vitest/coverage-v8": "^4.1.5",
     "prisma": "^7.8.0",
     "tsx": "^4.21.0",
     "typescript": "^6.0.3",
