@@ -1,0 +1,18 @@
+[Unit]
+Description=Matrix Appservice for Openclaw
+After=network.target postgresql.service matrix-synapse.service
+Requires=postgresql.service
+
+[Service]
+Type=simple
+User=martin
+WorkingDirectory=/home/martin/matrix-appservice-openclaw
+Environment=NODE_ENV=production
+Environment=CONFIG_PATH=/home/martin/matrix-appservice-openclaw/config.yaml
+Environment=REG_PATH=/home/martin/matrix-appservice-openclaw/registration.yaml
+ExecStart=/usr/bin/npx tsx src/index.ts
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
