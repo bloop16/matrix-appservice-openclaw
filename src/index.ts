@@ -86,7 +86,6 @@ const bridge = createBridge(config, REG_PATH, async (req) => {
         // Cast to the structural Bridge interface expected by handleMessage
         bridge: bridge as unknown as Parameters<typeof handleMessage>[0]['bridge'],
         timeoutSeconds: config.openclaw.streamTimeoutSeconds,
-        maxHistory: config.openclaw.maxHistoryMessages,
       }),
     );
   }

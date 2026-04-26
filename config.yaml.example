@@ -8,7 +8,6 @@ openclaw:
   token: "your-gateway-token"
   agentSyncIntervalMinutes: 10
   streamTimeoutSeconds: 60
-  maxHistoryMessages: 50
 
 appservice:
   port: 9993

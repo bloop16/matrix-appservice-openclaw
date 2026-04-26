@@ -12,7 +12,6 @@ const ConfigSchema = z.object({
     token: z.string().min(1),
     agentSyncIntervalMinutes: z.number().int().positive().default(10),
     streamTimeoutSeconds: z.number().int().positive().default(60),
-    maxHistoryMessages: z.number().int().positive().default(50),
   }),
   appservice: z.object({
     port: z.number().int().positive().default(9993),

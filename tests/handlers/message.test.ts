@@ -5,7 +5,6 @@ function makeStore(overrides: Record<string, unknown> = {}) {
   return {
     appendMessage: vi.fn().mockResolvedValue(true),
     getRoom: vi.fn().mockResolvedValue({ agent: { deletedAt: null }, sessionId: null }),
-    getRecentMessages: vi.fn().mockResolvedValue([]),
     updateRoomSessionId: vi.fn().mockResolvedValue(undefined),
     ...overrides,
   };
@@ -42,7 +41,6 @@ const BASE_CTX = {
   agentMxid: '@openclaw-coding:example.com',
   domain: 'example.com',
   timeoutSeconds: 60,
-  maxHistory: 50,
 };
 
 describe('handleMessage', () => {
@@ -52,7 +50,6 @@ describe('handleMessage', () => {
 
     await handleMessage({ ...BASE_CTX, store: store as any, client: client as any, bridge: {} as any });
 
-    expect(store.getRecentMessages).not.toHaveBeenCalled();
     expect(client.streamChat).not.toHaveBeenCalled();
   });
 
@@ -68,7 +65,7 @@ describe('handleMessage', () => {
   });
 
   it('streams response and sends notice on success', async () => {
-    const store = makeStore({ getRecentMessages: vi.fn().mockResolvedValue([{ role: 'user', content: 'hello' }]) });
+    const store = makeStore();
     const intent = makeIntent();
     const stream = makeStream([
       'data: {"id":"chatcmpl_abc","choices":[{"delta":{"content":"Hi"}}]}\n',

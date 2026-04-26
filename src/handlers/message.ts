@@ -20,11 +20,10 @@ interface MessageContext {
   body: string;
   agentMxid: string;
   domain: string;
-  store: Pick<SessionStore, 'appendMessage' | 'getRoom' | 'getRecentMessages' | 'updateRoomSessionId'>;
+  store: Pick<SessionStore, 'appendMessage' | 'getRoom' | 'updateRoomSessionId'>;
   client: Pick<OpenclawClient, 'streamChat'>;
   bridge: Bridge;
   timeoutSeconds: number;
-  maxHistory: number;
 }
 
 export async function handleMessage(ctx: MessageContext): Promise<void> {
@@ -45,11 +44,7 @@ export async function handleMessage(ctx: MessageContext): Promise<void> {
     return;
   }
 
-  const history = await ctx.store.getRecentMessages(ctx.roomId, ctx.maxHistory);
-  const messages = history.map((m) => ({
-    role: m.role as 'user' | 'assistant',
-    content: m.content,
-  }));
+  const messages = [{ role: 'user' as const, content: ctx.body }];
 
   const localpart = ctx.agentMxid.slice(1, ctx.agentMxid.indexOf(':'));
   const agentId = localpartToAgentId(localpart);

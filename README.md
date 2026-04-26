@@ -57,7 +57,6 @@ openclaw:
   token: "your-gateway-token"         # Bearer token for Openclaw API
   agentSyncIntervalMinutes: 10        # How often to re-sync agents
   streamTimeoutSeconds: 60            # SSE stream wall-clock timeout
-  maxHistoryMessages: 50              # Messages sent as context per request
 
 appservice:
   port: 9993                          # Port the appservice listens on
@@ -189,7 +188,6 @@ Tests use real PostgreSQL — no mocks. Run `prisma migrate deploy` before the f
 | `openclaw.token` | — | Bearer token |
 | `openclaw.agentSyncIntervalMinutes` | `10` | Agent sync cadence |
 | `openclaw.streamTimeoutSeconds` | `60` | Per-request SSE timeout |
-| `openclaw.maxHistoryMessages` | `50` | History window per request |
 | `appservice.port` | `9993` | Listening port |
 | `appservice.bindAddress` | `127.0.0.1` | Bind address — set to `0.0.0.0` if Synapse is on a different host |
 | `appservice.controlRoomAlias` | `openclaw-control` | Control room local alias |

@@ -20,7 +20,6 @@ appservice:
       const cfg = loadConfig('/tmp/test-config.yaml');
       expect(cfg.homeserver.domain).toBe('example.com');
       expect(cfg.openclaw.token).toBe('test-token');
-      expect(cfg.openclaw.maxHistoryMessages).toBe(50);
       expect(cfg.openclaw.agentSyncIntervalMinutes).toBe(10);
       expect(cfg.openclaw.streamTimeoutSeconds).toBe(60);
       expect(cfg.appservice.port).toBe(9993);
