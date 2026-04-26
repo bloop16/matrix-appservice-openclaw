@@ -1,8 +1,18 @@
-import { Bridge, AppServiceRegistration } from 'matrix-appservice-bridge';
+import { Bridge, AppServiceRegistration, MembershipCache } from 'matrix-appservice-bridge';
 import type { AppServiceOutput } from 'matrix-appservice';
 import { readFileSync } from 'fs';
 import { load } from 'js-yaml';
 import type { Config } from './config.js';
+
+// Bridge.getIntent() overrides intentOptions.registered with
+// membershipCache.isUserRegistered(), which is always false on a fresh start.
+// Appservice virtual users are provisioned by the homeserver on first use —
+// no explicit /register call is needed or wanted.
+class AlwaysRegisteredCache extends MembershipCache {
+  override isUserRegistered(_userId: string): boolean {
+    return true;
+  }
+}
 
 export function createBridge(
   config: Config,
@@ -16,18 +26,10 @@ export function createBridge(
     homeserverUrl: config.homeserver.url,
     domain: config.homeserver.domain,
     registration,
+    membershipCache: new AlwaysRegisteredCache(),
     controller: {
       onEvent,
       onUserQuery: async () => ({}),
-    },
-    // Virtual users in an appservice namespace are provisioned automatically
-    // by the homeserver on first use — explicit /register calls are not needed.
-    // This bypasses a bug in @vector-im/matrix-bot-sdk where M_USER_IN_USE
-    // can be thrown as a plain object (not MatrixError), slipping past the
-    // errcode check and aborting message handling.
-    intentOptions: {
-      bot: { registered: true },
-      clients: { registered: true },
     },
   });
 }
