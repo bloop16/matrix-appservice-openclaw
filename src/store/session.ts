@@ -96,4 +96,8 @@ export class SessionStore {
       create: { key, value },
     });
   }
+
+  async deleteAppState(key: string): Promise<void> {
+    await this.db.appState.deleteMany({ where: { key } });
+  }
 }

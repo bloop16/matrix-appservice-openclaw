@@ -115,7 +115,13 @@ sudo systemctl enable --now matrix-appservice-openclaw
 
 ## Control room
 
-On first start the appservice creates a Matrix room aliased `#openclaw-control:<domain>` and invites the `sender_localpart` bot. Use any Matrix client to join this room.
+On first start the appservice fully bootstraps the control room automatically:
+
+1. Registers the bot user if it does not exist yet
+2. Resolves or creates a room aliased `#openclaw-control:<domain>`
+3. Joins the room as the bot user
+
+No manual admin steps are required. Use any Matrix client to join the same room.
 
 Available commands:
 

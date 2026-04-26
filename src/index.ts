@@ -137,17 +137,21 @@ async function handleControlCommand(
 }
 
 async function ensureControlRoom(): Promise<void> {
+  const botIntent = bridge.getIntent() as Intent;
   const stored = await store.getAppState('controlRoomId');
   if (stored) {
-    controlRoomId = stored;
-    return;
+    try {
+      await botIntent.resolveRoom(stored);
+      controlRoomId = stored;
+      return;
+    } catch {
+      await store.deleteAppState('controlRoomId');
+    }
   }
-  const botIntent = bridge.getIntent() as Intent;
   try {
-    const resolved = await botIntent.resolveRoom(
+    controlRoomId = await botIntent.resolveRoom(
       `#${config.appservice.controlRoomAlias}:${config.homeserver.domain}`,
     );
-    controlRoomId = resolved;
   } catch {
     const result = await botIntent.createRoom({
       createAsClient: true,
@@ -155,12 +159,14 @@ async function ensureControlRoom(): Promise<void> {
     });
     controlRoomId = (result as { room_id: string }).room_id;
   }
+  await botIntent.join(controlRoomId!);
   await store.setAppState('controlRoomId', controlRoomId!);
 }
 
 async function main(): Promise<void> {
   await agentSync.sync();
   await bridge.initialise();
+  await (bridge.getIntent() as Intent).ensureRegistered();
   await ensureControlRoom();
   await bridge.listen(config.appservice.port, config.appservice.bindAddress);
   const _syncHandle = agentSync.startPeriodicSync(config.openclaw.agentSyncIntervalMinutes);

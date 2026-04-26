@@ -60,6 +60,16 @@ describe('SessionStore', () => {
     expect(await store.getAppState('missing')).toBeNull();
   });
 
+  it('deleteAppState removes the entry', async () => {
+    await store.setAppState('staleKey', '!old:example.com');
+    await store.deleteAppState('staleKey');
+    expect(await store.getAppState('staleKey')).toBeNull();
+  });
+
+  it('deleteAppState is idempotent for missing keys', async () => {
+    await expect(store.deleteAppState('nonexistent')).resolves.toBeUndefined();
+  });
+
   it('getRoomsForAgent returns rooms for an agent', async () => {
     const rooms = await store.getRoomsForAgent('openclaw/test');
     expect(rooms.length).toBeGreaterThanOrEqual(1);
