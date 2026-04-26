@@ -1,8 +1,8 @@
-import type { PrismaClient } from '@prisma/client';
+import { type PrismaClient, Prisma, type Agent, type Room, type Message } from '@prisma/client';
 
 export interface AppendMessageInput {
   roomId: string;
-  role: string;
+  role: 'user' | 'assistant';
   content: string;
   eventId: string | null;
 }
@@ -27,11 +27,11 @@ export class SessionStore {
     await this.db.agent.update({ where: { id }, data: { deletedAt: new Date() } });
   }
 
-  async getActiveAgents() {
+  async getActiveAgents(): Promise<Agent[]> {
     return this.db.agent.findMany({ where: { deletedAt: null } });
   }
 
-  async getRoomsForAgent(agentId: string) {
+  async getRoomsForAgent(agentId: string): Promise<Room[]> {
     return this.db.room.findMany({ where: { agentId } });
   }
 
@@ -44,37 +44,44 @@ export class SessionStore {
     await this.db.room.create({ data });
   }
 
-  async getRoomsByUser(matrixUserId: string) {
+  async getRoomsByUser(matrixUserId: string): Promise<(Room & { agent: Agent })[]> {
     return this.db.room.findMany({ where: { matrixUserId }, include: { agent: true } });
   }
 
-  async getRoom(id: string) {
+  async getRoom(id: string): Promise<(Room & { agent: Agent }) | null> {
     return this.db.room.findUnique({ where: { id }, include: { agent: true } });
   }
 
-  async appendMessage(input: AppendMessageInput): Promise<void> {
-    await this.db.message.create({
-      data: {
-        roomId: input.roomId,
-        role: input.role,
-        content: input.content,
-        eventId: input.eventId,
-      },
-    });
+  async appendMessage(input: AppendMessageInput): Promise<boolean> {
+    try {
+      await this.db.message.create({
+        data: {
+          roomId: input.roomId,
+          role: input.role,
+          content: input.content,
+          eventId: input.eventId,
+        },
+      });
+      return true;
+    } catch (err) {
+      if (
+        err instanceof Prisma.PrismaClientKnownRequestError &&
+        err.code === 'P2002' &&
+        input.eventId !== null
+      ) {
+        return false;
+      }
+      throw err;
+    }
   }
 
-  async getRecentMessages(roomId: string, limit: number) {
+  async getRecentMessages(roomId: string, limit: number): Promise<Message[]> {
     const msgs = await this.db.message.findMany({
       where: { roomId },
       orderBy: { timestamp: 'desc' },
       take: limit,
     });
     return msgs.reverse();
-  }
-
-  async isDuplicateEvent(eventId: string): Promise<boolean> {
-    const existing = await this.db.message.findUnique({ where: { eventId } });
-    return existing !== null;
   }
 
   async getAppState(key: string): Promise<string | null> {

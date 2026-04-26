@@ -49,9 +49,9 @@ describe('SessionStore', () => {
     expect(msgs[0]?.role).toBe('user');
   });
 
-  it('isDuplicateEvent returns true for known eventId', async () => {
-    expect(await store.isDuplicateEvent('evt1')).toBe(true);
-    expect(await store.isDuplicateEvent('unknown')).toBe(false);
+  it('appendMessage returns false for duplicate eventId', async () => {
+    const result = await store.appendMessage({ roomId: '!test:example.com', role: 'user', content: 'dup', eventId: 'evt1' });
+    expect(result).toBe(false);
   });
 
   it('gets and sets appstate', async () => {

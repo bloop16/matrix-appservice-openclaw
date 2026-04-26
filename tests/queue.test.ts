@@ -1,44 +1,67 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { RoomQueue } from '../src/queue.js';
+
+afterEach(() => {
+  vi.useRealTimers();
+});
+
+// Helper: flush N microtask ticks
+async function flushMicrotasks(n = 10): Promise<void> {
+  for (let i = 0; i < n; i++) {
+    await Promise.resolve();
+  }
+}
 
 describe('RoomQueue', () => {
   it('processes tasks sequentially per room', async () => {
+    vi.useFakeTimers();
     const queue = new RoomQueue();
     const order: number[] = [];
 
-    const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
+    let resolve1!: () => void;
+    const p1 = new Promise<void>((r) => { resolve1 = r; });
 
-    queue.enqueue('room1', async () => { await delay(20); order.push(1); });
+    queue.enqueue('room1', () => p1.then(() => { order.push(1); }));
     queue.enqueue('room1', async () => { order.push(2); });
     queue.enqueue('room2', async () => { order.push(3); });
 
-    await delay(60);
-    expect(order.indexOf(1)).toBeLessThan(order.indexOf(2)); // room1: 1 before 2
-    expect(order).toContain(3);
+    // room2 and room1's first task start immediately
+    await flushMicrotasks();
+    expect(order).toContain(3); // room2 ran
+    expect(order).not.toContain(1); // room1 task 1 not done yet (waiting on p1)
+    expect(order).not.toContain(2); // room1 task 2 blocked behind task 1
+
+    resolve1();
+    await flushMicrotasks();
+    expect(order.indexOf(1)).toBeLessThan(order.indexOf(2));
   });
 
-  it('different rooms run independently (not serialised to each other)', async () => {
+  it('different rooms run independently', async () => {
+    vi.useFakeTimers();
     const queue = new RoomQueue();
     const started: string[] = [];
-    const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-    queue.enqueue('roomA', async () => { started.push('A'); await delay(30); });
+    let resolveA!: () => void;
+    const pA = new Promise<void>((r) => { resolveA = r; });
+
+    queue.enqueue('roomA', () => { started.push('A'); return pA; });
     queue.enqueue('roomB', async () => { started.push('B'); });
 
-    await delay(20);
-    // both should have started before roomA finishes
+    await flushMicrotasks();
     expect(started).toContain('A');
     expect(started).toContain('B');
+    resolveA();
   });
 
   it('a task error does not break the queue chain', async () => {
+    vi.useFakeTimers();
     const queue = new RoomQueue();
     const order: string[] = [];
 
     queue.enqueue('room1', async () => { throw new Error('boom'); });
     queue.enqueue('room1', async () => { order.push('second'); });
 
-    await new Promise((r) => setTimeout(r, 30));
+    await flushMicrotasks();
     expect(order).toContain('second');
   });
 });

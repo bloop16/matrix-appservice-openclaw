@@ -7,6 +7,10 @@ export class RoomQueue {
     const tail = this.queues.get(roomId) ?? Promise.resolve();
     const next = tail.then(() => task()).catch(() => {
       // errors are swallowed to keep the chain alive
+    }).finally(() => {
+      if (this.queues.get(roomId) === next) {
+        this.queues.delete(roomId);
+      }
     });
     this.queues.set(roomId, next);
   }
