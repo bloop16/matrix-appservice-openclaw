@@ -27,6 +27,17 @@ const ConfigSchema = z.object({
 export type Config = z.infer<typeof ConfigSchema>;
 
 export function loadConfig(path: string): Config {
-  const raw = load(readFileSync(path, 'utf8'));
-  return ConfigSchema.parse(raw);
+  let raw: unknown;
+  try {
+    raw = load(readFileSync(path, 'utf8'));
+  } catch (err) {
+    throw new Error(
+      `Failed to read config file "${path}": ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+  const result = ConfigSchema.safeParse(raw);
+  if (!result.success) {
+    throw new Error(`Invalid config at "${path}": ${result.error.message}`);
+  }
+  return result.data;
 }
