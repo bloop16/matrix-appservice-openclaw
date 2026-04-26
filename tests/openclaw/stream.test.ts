@@ -69,4 +69,24 @@ describe('collectStream', () => {
     expect(result.text).toBe('world');
     expect(result.interrupted).toBe(true);
   });
+
+  it('extracts sessionId from the first chunk id field', async () => {
+    const stream = makeStream([
+      'data: {"id":"chatcmpl_abc123","choices":[{"delta":{"role":"assistant"}}]}',
+      'data: {"id":"chatcmpl_abc123","choices":[{"delta":{"content":"Hello"}}]}',
+      'data: [DONE]',
+    ]);
+    const result = await collectStream(stream);
+    expect(result.sessionId).toBe('chatcmpl_abc123');
+    expect(result.text).toBe('Hello');
+  });
+
+  it('returns undefined sessionId when no id in stream', async () => {
+    const stream = makeStream([
+      'data: {"choices":[{"delta":{"content":"Hi"}}]}',
+      'data: [DONE]',
+    ]);
+    const result = await collectStream(stream);
+    expect(result.sessionId).toBeUndefined();
+  });
 });

@@ -23,6 +23,7 @@ model Room {
   matrixUserId String
   agent        Agent     @relation(fields: [agentId], references: [id])
   title        String?
+  sessionId    String?
   createdAt    DateTime  @default(now())
   messages     Message[]
 

@@ -1,6 +1,7 @@
 export interface StreamResult {
   text: string;
   interrupted: boolean;
+  sessionId?: string;
 }
 
 export async function collectStream(body: ReadableStream<Uint8Array>): Promise<StreamResult> {
@@ -9,6 +10,7 @@ export async function collectStream(body: ReadableStream<Uint8Array>): Promise<S
   let buffer = '';
   let accumulated = '';
   let done = false;
+  let sessionId: string | undefined;
 
   try {
     while (true) {
@@ -25,8 +27,10 @@ export async function collectStream(body: ReadableStream<Uint8Array>): Promise<S
         if (payload === '[DONE]') { done = true; break; }
         try {
           const parsed = JSON.parse(payload) as {
+            id?: string;
             choices: { delta: { content?: string } }[];
           };
+          if (!sessionId && parsed.id) sessionId = parsed.id;
           accumulated += parsed.choices[0]?.delta?.content ?? '';
         } catch {
           // skip malformed SSE lines
@@ -44,8 +48,10 @@ export async function collectStream(body: ReadableStream<Uint8Array>): Promise<S
         else {
           try {
             const parsed = JSON.parse(payload) as {
+              id?: string;
               choices: { delta: { content?: string } }[];
             };
+            if (!sessionId && parsed.id) sessionId = parsed.id;
             accumulated += parsed.choices[0]?.delta?.content ?? '';
           } catch {
             // skip malformed
@@ -57,5 +63,5 @@ export async function collectStream(body: ReadableStream<Uint8Array>): Promise<S
     reader.releaseLock();
   }
 
-  return { text: accumulated, interrupted: !done };
+  return { text: accumulated, interrupted: !done, sessionId };
 }

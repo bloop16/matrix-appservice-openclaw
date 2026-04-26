@@ -42,11 +42,14 @@ export class OpenclawClient {
     agentId: string,
     messages: ChatMessage[],
     signal: AbortSignal,
+    sessionId?: string,
   ): Promise<ReadableStream<Uint8Array>> {
+    const body: Record<string, unknown> = { model: agentId, messages, stream: true };
+    if (sessionId) body['session_id'] = sessionId;
     const res = await fetch(`${this.baseUrl}/v1/chat/completions`, {
       method: 'POST',
       headers: this.headers,
-      body: JSON.stringify({ model: agentId, messages, stream: true }),
+      body: JSON.stringify(body),
       signal,
     });
     if (!res.ok) {

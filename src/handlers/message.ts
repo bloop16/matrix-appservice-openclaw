@@ -20,7 +20,7 @@ interface MessageContext {
   body: string;
   agentMxid: string;
   domain: string;
-  store: Pick<SessionStore, 'appendMessage' | 'getRoom' | 'getRecentMessages'>;
+  store: Pick<SessionStore, 'appendMessage' | 'getRoom' | 'getRecentMessages' | 'updateRoomSessionId'>;
   client: Pick<OpenclawClient, 'streamChat'>;
   bridge: Bridge;
   timeoutSeconds: number;
@@ -53,16 +53,19 @@ export async function handleMessage(ctx: MessageContext): Promise<void> {
 
   const localpart = ctx.agentMxid.slice(1, ctx.agentMxid.indexOf(':'));
   const agentId = localpartToAgentId(localpart);
+  const existingSessionId = room?.sessionId ?? undefined;
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), ctx.timeoutSeconds * 1000);
 
   let replyText = '';
+  let newSessionId: string | undefined;
 
   try {
     await intent.sendTyping(ctx.roomId, true);
-    const stream = await ctx.client.streamChat(agentId, messages, controller.signal);
+    const stream = await ctx.client.streamChat(agentId, messages, controller.signal, existingSessionId);
     const result = await collectStream(stream);
+    newSessionId = result.sessionId;
     replyText = result.interrupted
       ? `${result.text} _(response was cut short)_`
       : result.text;
@@ -83,4 +86,7 @@ export async function handleMessage(ctx: MessageContext): Promise<void> {
     content: replyText,
     eventId: null,
   });
+  if (newSessionId) {
+    await ctx.store.updateRoomSessionId(ctx.roomId, newSessionId);
+  }
 }

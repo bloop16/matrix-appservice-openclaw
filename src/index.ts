@@ -166,7 +166,6 @@ async function ensureControlRoom(): Promise<void> {
 async function main(): Promise<void> {
   await agentSync.sync();
   await bridge.initialise();
-  await (bridge.getIntent() as Intent).ensureRegistered();
   await ensureControlRoom();
   await bridge.listen(config.appservice.port, config.appservice.bindAddress);
   const _syncHandle = agentSync.startPeriodicSync(config.openclaw.agentSyncIntervalMinutes);
