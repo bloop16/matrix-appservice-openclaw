@@ -25,9 +25,9 @@ export function isRateLimited(
   state: Map<string, number[]>,
 ): boolean {
   const now = Date.now();
-  const timestamps = (state.get(userId) ?? []).filter((t) => now - t < WINDOW_MS);
+  const existing = state.get(userId) ?? [];
+  const timestamps = existing.filter((t) => now - t < WINDOW_MS);
   if (timestamps.length >= RATE_LIMIT) return true;
-  timestamps.push(now);
-  state.set(userId, timestamps);
+  state.set(userId, [...timestamps, now]);
   return false;
 }

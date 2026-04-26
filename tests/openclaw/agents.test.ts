@@ -57,4 +57,31 @@ describe('AgentSyncService.sync', () => {
     expect(service.isKnownAgent('openclaw/coding')).toBe(true);
     expect(service.isKnownAgent('openclaw/unknown')).toBe(false);
   });
+
+  it('getKnownAgentIds returns all cached agent IDs', async () => {
+    const mockClient = { listAgents: vi.fn().mockResolvedValue([
+      { id: 'openclaw/coding', displayName: 'coding' },
+      { id: 'openclaw/research', displayName: 'research' },
+    ]) };
+    const mockStore = { upsertAgent: vi.fn(), softDeleteAgent: vi.fn(), getActiveAgents: vi.fn().mockResolvedValue([]) };
+    const service = new AgentSyncService(mockClient as any, mockStore as any, 'example.com');
+    await service.sync();
+    const ids = service.getKnownAgentIds();
+    expect(ids).toContain('openclaw/coding');
+    expect(ids).toContain('openclaw/research');
+    expect(ids).toHaveLength(2);
+  });
+
+  it('startPeriodicSync calls setInterval with correct interval', () => {
+    vi.useFakeTimers();
+    const mockClient = { listAgents: vi.fn().mockResolvedValue([]) };
+    const mockStore = { upsertAgent: vi.fn(), softDeleteAgent: vi.fn(), getActiveAgents: vi.fn().mockResolvedValue([]) };
+    const service = new AgentSyncService(mockClient as any, mockStore as any, 'example.com');
+    const handle = service.startPeriodicSync(10);
+    expect(handle).toBeDefined();
+    vi.advanceTimersByTime(10 * 60 * 1000);
+    expect(mockClient.listAgents).toHaveBeenCalled();
+    clearInterval(handle);
+    vi.useRealTimers();
+  });
 });
