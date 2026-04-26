@@ -41,7 +41,7 @@ export async function handleMessage(ctx: MessageContext): Promise<void> {
   const intent = ctx.bridge.getIntent(ctx.agentMxid);
 
   if (room?.agent?.deletedAt) {
-    await intent.sendText(ctx.roomId, 'This agent is no longer available.');
+    await intent.sendNotice(ctx.roomId, 'This agent is no longer available.');
     return;
   }
 
@@ -51,16 +51,16 @@ export async function handleMessage(ctx: MessageContext): Promise<void> {
     content: m.content,
   }));
 
-  const localpart = ctx.agentMxid.slice(1).replace(`:${ctx.domain}`, '');
+  const localpart = ctx.agentMxid.slice(1, ctx.agentMxid.indexOf(':'));
   const agentId = localpartToAgentId(localpart);
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), ctx.timeoutSeconds * 1000);
 
-  await intent.sendTyping(ctx.roomId, true);
-  let replyText: string;
+  let replyText = '';
 
   try {
+    await intent.sendTyping(ctx.roomId, true);
     const stream = await ctx.client.streamChat(agentId, messages, controller.signal);
     const result = await collectStream(stream);
     replyText = result.interrupted
