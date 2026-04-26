@@ -2,6 +2,8 @@
 
 A [Matrix Application Service](https://spec.matrix.org/v1.9/application-service-api/) that bridges [Openclaw](https://openclaw.ai) AI agents into a Synapse homeserver. Each Openclaw agent appears as a real Matrix user; end users chat with agents directly in any Matrix client.
 
+DEVELOPED with Claude and Superpowers
+
 ## Features
 
 - Syncs Openclaw agents periodically and registers them as virtual Matrix users
@@ -50,7 +52,8 @@ homeserver:
   domain: "example.com"               # server_name in homeserver.yaml
 
 openclaw:
-  url: "http://127.0.0.1:18789"       # Openclaw gateway URL
+  # Can be a remote host — Openclaw does not need to run on the same machine
+  url: "http://openclaw.example.com:18789"
   token: "your-gateway-token"         # Bearer token for Openclaw API
   agentSyncIntervalMinutes: 10        # How often to re-sync agents
   streamTimeoutSeconds: 60            # SSE stream wall-clock timeout
@@ -58,6 +61,8 @@ openclaw:
 
 appservice:
   port: 9993                          # Port the appservice listens on
+  # Use "127.0.0.1" when Synapse runs on the same machine (recommended).
+  # Use "0.0.0.0" (or a specific interface IP) when Synapse is on a different host.
   bindAddress: "127.0.0.1"
   controlRoomAlias: "openclaw-control"
 
@@ -94,15 +99,19 @@ CONFIG_PATH=config.yaml REG_PATH=registration.yaml npm start
 
 ### Production (systemd)
 
-Copy and enable the provided unit file:
+A template unit file is provided. Copy and adapt it to your system:
+
+```bash
+cp matrix-appservice-openclaw.service.example matrix-appservice-openclaw.service
+```
+
+Edit the file and replace every `<YOUR_USER>` and `/path/to/matrix-appservice-openclaw` with the actual user and installation path, then install:
 
 ```bash
 sudo cp matrix-appservice-openclaw.service /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable --now matrix-appservice-openclaw
 ```
-
-The unit file runs as the `martin` user by default. Edit `User=` to match your system before enabling.
 
 ## Control room
 
@@ -117,6 +126,19 @@ Available commands:
 | `!help` | Show available commands |
 
 Commands are rate-limited to 5 per minute per user.
+
+## Deployment topology
+
+All three components (Synapse, this appservice, Openclaw) can run on different hosts:
+
+| Component | Network requirement |
+|-----------|---------------------|
+| **Synapse → appservice** | Synapse calls `appservice.port` — must be reachable from Synapse's host. Set `bindAddress: "0.0.0.0"` and open the port if they are on different machines. |
+| **Appservice → Synapse** | Outbound HTTPS to `homeserver.url` from the appservice host. |
+| **Appservice → Openclaw** | Outbound HTTP/HTTPS to `openclaw.url` from the appservice host. |
+| **Appservice → PostgreSQL** | Outbound TCP to the database. `database.url` can point to any reachable PostgreSQL host. |
+
+Typical single-host setup: `bindAddress: "127.0.0.1"` (default). Synapse and the appservice share `localhost`.
 
 ## Architecture
 
@@ -162,7 +184,7 @@ Tests use real PostgreSQL — no mocks. Run `prisma migrate deploy` before the f
 | `openclaw.streamTimeoutSeconds` | `60` | Per-request SSE timeout |
 | `openclaw.maxHistoryMessages` | `50` | History window per request |
 | `appservice.port` | `9993` | Listening port |
-| `appservice.bindAddress` | `127.0.0.1` | Bind address |
+| `appservice.bindAddress` | `127.0.0.1` | Bind address — set to `0.0.0.0` if Synapse is on a different host |
 | `appservice.controlRoomAlias` | `openclaw-control` | Control room local alias |
 | `database.url` | — | PostgreSQL connection string |
 
