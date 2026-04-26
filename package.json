@@ -15,9 +15,9 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": ["matrix", "appservice", "openclaw", "bridge", "ai"],
+  "author": "Martin Rauscher",
+  "license": "MIT",
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
