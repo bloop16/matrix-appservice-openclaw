@@ -1,0 +1,42 @@
+export interface StreamResult {
+  text: string;
+  interrupted: boolean;
+}
+
+export async function collectStream(body: ReadableStream<Uint8Array>): Promise<StreamResult> {
+  const reader = body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let accumulated = '';
+  let done = false;
+
+  try {
+    while (true) {
+      const { value, done: streamDone } = await reader.read();
+      if (streamDone) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() ?? '';
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed || !trimmed.startsWith('data:')) continue;
+        const payload = trimmed.slice(5).trim();
+        if (payload === '[DONE]') { done = true; break; }
+        try {
+          const parsed = JSON.parse(payload) as {
+            choices: { delta: { content?: string } }[];
+          };
+          accumulated += parsed.choices[0]?.delta?.content ?? '';
+        } catch {
+          // skip malformed SSE lines
+        }
+      }
+      if (done) break;
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  return { text: accumulated, interrupted: !done };
+}
