@@ -121,11 +121,12 @@ Available commands:
 
 | Command | Description |
 |---------|-------------|
-| `!sync` | Force an immediate agent sync |
-| `!list` | List all active agents |
-| `!help` | Show available commands |
+| `!openclaw agents` | List all active agents |
+| `!openclaw new <name>` | Create a new session room with an agent |
+| `!openclaw sessions` | List your open session rooms |
+| `!openclaw help` | Show available commands |
 
-Commands are rate-limited to 5 per minute per user.
+Commands are rate-limited to 10 per minute per user.
 
 ## Deployment topology
 
