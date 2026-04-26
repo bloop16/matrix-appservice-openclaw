@@ -8,7 +8,7 @@ export interface ChatMessage {
   content: string;
 }
 
-interface ClientConfig {
+export interface ClientConfig {
   url: string;
   token: string;
 }

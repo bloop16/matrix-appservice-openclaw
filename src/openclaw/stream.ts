@@ -34,6 +34,25 @@ export async function collectStream(body: ReadableStream<Uint8Array>): Promise<S
       }
       if (done) break;
     }
+
+    buffer += decoder.decode();
+    if (buffer.trim()) {
+      const trimmed = buffer.trim();
+      if (trimmed.startsWith('data:')) {
+        const payload = trimmed.slice(5).trim();
+        if (payload === '[DONE]') done = true;
+        else {
+          try {
+            const parsed = JSON.parse(payload) as {
+              choices: { delta: { content?: string } }[];
+            };
+            accumulated += parsed.choices[0]?.delta?.content ?? '';
+          } catch {
+            // skip malformed
+          }
+        }
+      }
+    }
   } finally {
     reader.releaseLock();
   }

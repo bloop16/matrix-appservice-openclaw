@@ -88,4 +88,16 @@ describe('OpenclawClient.streamChat', () => {
       expect.objectContaining({ signal: controller.signal }),
     );
   });
+
+  it('throws when response body is null', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      body: null,
+      text: async () => '',
+    }));
+    const client = new OpenclawClient({ url: 'http://localhost:18789', token: 'tok' });
+    await expect(
+      client.streamChat('openclaw/coding', [], new AbortController().signal)
+    ).rejects.toThrow('No response body');
+  });
 });
