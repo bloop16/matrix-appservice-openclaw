@@ -20,14 +20,14 @@ export function parseCommand(text: string): Command | null {
 const RATE_LIMIT = 10;
 const WINDOW_MS = 60_000;
 
-export function isRateLimited(
-  userId: string,
-  state: Map<string, number[]>,
-): boolean {
-  const now = Date.now();
-  const existing = state.get(userId) ?? [];
-  const timestamps = existing.filter((t) => now - t < WINDOW_MS);
-  if (timestamps.length >= RATE_LIMIT) return true;
-  state.set(userId, [...timestamps, now]);
-  return false;
+export class RateLimiter {
+  private readonly state = new Map<string, number[]>();
+
+  isLimited(userId: string): boolean {
+    const now = Date.now();
+    const timestamps = (this.state.get(userId) ?? []).filter((t) => now - t < WINDOW_MS);
+    if (timestamps.length >= RATE_LIMIT) return true;
+    this.state.set(userId, [...timestamps, now]);
+    return false;
+  }
 }

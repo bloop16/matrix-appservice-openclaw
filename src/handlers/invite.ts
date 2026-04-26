@@ -13,7 +13,7 @@ interface InviteContext {
 }
 
 export async function handleInvite(ctx: InviteContext): Promise<void> {
-  const localpart = ctx.invitedMxid.slice(1).replace(`:${ctx.domain}`, '');
+  const localpart = ctx.invitedMxid.slice(1, ctx.invitedMxid.indexOf(':'));
   const agentId = localpartToAgentId(localpart);
 
   if (!ctx.agentSync.isKnownAgent(agentId)) return;

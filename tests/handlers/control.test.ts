@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { parseCommand, isRateLimited } from '../../src/handlers/control.js';
+import { describe, it, expect, vi } from 'vitest';
+import { parseCommand, RateLimiter } from '../../src/handlers/control.js';
 
 describe('parseCommand', () => {
   it('parses !openclaw agents', () => {
@@ -31,12 +31,22 @@ describe('parseCommand', () => {
   });
 });
 
-describe('isRateLimited', () => {
+describe('RateLimiter', () => {
   it('allows up to 10 commands per minute', () => {
-    const state = new Map<string, number[]>();
+    const limiter = new RateLimiter();
     for (let i = 0; i < 10; i++) {
-      expect(isRateLimited('@user:example.com', state)).toBe(false);
+      expect(limiter.isLimited('@user:example.com')).toBe(false);
     }
-    expect(isRateLimited('@user:example.com', state)).toBe(true);
+    expect(limiter.isLimited('@user:example.com')).toBe(true);
+  });
+
+  it('resets after the time window expires', () => {
+    vi.useFakeTimers();
+    const limiter = new RateLimiter();
+    for (let i = 0; i < 10; i++) limiter.isLimited('@user:example.com');
+    expect(limiter.isLimited('@user:example.com')).toBe(true);
+    vi.advanceTimersByTime(61_000); // past 60s window
+    expect(limiter.isLimited('@user:example.com')).toBe(false);
+    vi.useRealTimers();
   });
 });

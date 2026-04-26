@@ -57,7 +57,7 @@ export class AgentSyncService {
     return [...this.cachedAgentIds];
   }
 
-  startPeriodicSync(intervalMinutes: number): NodeJS.Timeout {
+  startPeriodicSync(intervalMinutes: number): ReturnType<typeof setInterval> {
     return setInterval(() => { void this.sync(); }, intervalMinutes * 60 * 1000);
   }
 }
