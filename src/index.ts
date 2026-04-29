@@ -63,7 +63,13 @@ const bridge = createBridge(config, REG_PATH, async (req) => {
       }
       const cmd = parseCommand(body);
       if (cmd) {
-        await handleControlCommand(cmd, event['sender'] as string, event['room_id'] as string);
+        try {
+          await handleControlCommand(cmd, event['sender'] as string, event['room_id'] as string);
+        } catch (err: unknown) {
+          process.stderr.write(`[control] error handling "${body}": ${err instanceof Error ? err.stack ?? err.message : String(err)}\n`);
+          const botIntent = bridge.getIntent() as Intent;
+          await sendNotice(botIntent, event['room_id'] as string, `Error: ${err instanceof Error ? err.message : String(err)}`);
+        }
       }
       return;
     }
@@ -162,11 +168,13 @@ async function handleControlCommand(
     }
     const agentMxid = agentIdToMxid(agentId, config.homeserver.domain);
     const title = `[${cmd.name}] Session ${new Date().toISOString().slice(0, 16).replace('T', ' ')}`;
+    process.stderr.write(`[new] creating room as ${agentMxid}, inviting ${senderMxid}\n`);
     const agentIntent = bridge.getIntent(agentMxid) as Intent;
     const newRoom = await agentIntent.createRoom({
       createAsClient: true,
       options: { name: title, invite: [senderMxid] },
     });
+    process.stderr.write(`[new] room created: ${JSON.stringify(newRoom)}\n`);
     await store.createRoom({ id: (newRoom as { room_id: string }).room_id, agentId, matrixUserId: senderMxid, title });
     await sendNotice(botIntent, roomId, `Created room: ${title}`);
   }
