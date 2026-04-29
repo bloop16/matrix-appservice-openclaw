@@ -5,8 +5,8 @@ export class RoomQueue {
 
   enqueue(roomId: string, task: Task): void {
     const tail = this.queues.get(roomId) ?? Promise.resolve();
-    const next = tail.then(() => task()).catch(() => {
-      // errors are swallowed to keep the chain alive
+    const next = tail.then(() => task()).catch((err: unknown) => {
+      console.error(`[RoomQueue] error in room ${roomId}:`, err);
     }).finally(() => {
       if (this.queues.get(roomId) === next) {
         this.queues.delete(roomId);
