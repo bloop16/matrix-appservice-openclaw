@@ -1,7 +1,6 @@
 export interface StreamResult {
   text: string;
   interrupted: boolean;
-  sessionId?: string;
 }
 
 export async function collectStream(body: ReadableStream<Uint8Array>): Promise<StreamResult> {
@@ -10,7 +9,6 @@ export async function collectStream(body: ReadableStream<Uint8Array>): Promise<S
   let buffer = '';
   let accumulated = '';
   let done = false;
-  let sessionId: string | undefined;
 
   try {
     while (true) {
@@ -26,13 +24,10 @@ export async function collectStream(body: ReadableStream<Uint8Array>): Promise<S
         const payload = trimmed.slice(5).trim();
         if (payload === '[DONE]') { done = true; break; }
         try {
-          const parsed = JSON.parse(payload) as Record<string, unknown>;
-          // Log first chunk to discover all available fields
-          if (!sessionId) process.stderr.write(`[stream] first chunk keys: ${Object.keys(parsed).join(', ')} | full: ${payload.slice(0, 300)}\n`);
-          const id = parsed['id'] as string | undefined;
-          if (!sessionId && id) sessionId = id;
-          const choices = parsed['choices'] as { delta: { content?: string } }[] | undefined;
-          accumulated += choices?.[0]?.delta?.content ?? '';
+          const parsed = JSON.parse(payload) as {
+            choices: { delta: { content?: string } }[];
+          };
+          accumulated += parsed.choices[0]?.delta?.content ?? '';
         } catch {
           // skip malformed SSE lines
         }
@@ -49,10 +44,8 @@ export async function collectStream(body: ReadableStream<Uint8Array>): Promise<S
         else {
           try {
             const parsed = JSON.parse(payload) as {
-              id?: string;
               choices: { delta: { content?: string } }[];
             };
-            if (!sessionId && parsed.id) sessionId = parsed.id;
             accumulated += parsed.choices[0]?.delta?.content ?? '';
           } catch {
             // skip malformed
@@ -64,5 +57,5 @@ export async function collectStream(body: ReadableStream<Uint8Array>): Promise<S
     reader.releaseLock();
   }
 
-  return { text: accumulated, interrupted: !done, sessionId };
+  return { text: accumulated, interrupted: !done };
 }

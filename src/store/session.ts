@@ -100,8 +100,4 @@ export class SessionStore {
   async deleteAppState(key: string): Promise<void> {
     await this.db.appState.deleteMany({ where: { key } });
   }
-
-  async updateRoomSessionId(roomId: string, sessionId: string): Promise<void> {
-    await this.db.room.update({ where: { id: roomId }, data: { sessionId } });
-  }
 }

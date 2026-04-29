@@ -19,14 +19,13 @@ interface MessageContext {
   body: string;
   agentMxid: string;
   domain: string;
-  store: Pick<SessionStore, 'appendMessage' | 'getRoom' | 'updateRoomSessionId'>;
+  store: Pick<SessionStore, 'appendMessage' | 'getRoom'>;
   client: Pick<OpenclawClient, 'streamChat'>;
   bridge: Bridge;
   timeoutSeconds: number;
 }
 
 export async function handleMessage(ctx: MessageContext): Promise<void> {
-  // Persist user message; returns false if eventId already exists (duplicate)
   const isNew = await ctx.store.appendMessage({
     roomId: ctx.roomId,
     role: 'user',
@@ -44,24 +43,18 @@ export async function handleMessage(ctx: MessageContext): Promise<void> {
   }
 
   const messages = [{ role: 'user' as const, content: ctx.body }];
-
   const localpart = ctx.agentMxid.slice(1, ctx.agentMxid.indexOf(':'));
   const agentId = localpartToAgentId(localpart);
-  const existingSessionId = room?.sessionId ?? undefined;
-  process.stderr.write(`[session] room=${ctx.roomId} stored=${existingSessionId ?? 'none'}\n`);
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), ctx.timeoutSeconds * 1000);
 
   let replyText = '';
-  let newSessionId: string | undefined;
 
   try {
     await intent.sendTyping(ctx.roomId, true);
-    const stream = await ctx.client.streamChat(agentId, messages, controller.signal, existingSessionId);
+    const stream = await ctx.client.streamChat(agentId, messages, controller.signal);
     const result = await collectStream(stream);
-    newSessionId = result.sessionId;
-    process.stderr.write(`[session] received id=${newSessionId ?? 'none'}\n`);
     replyText = result.interrupted
       ? `${result.text} _(response was cut short)_`
       : result.text;
@@ -82,10 +75,4 @@ export async function handleMessage(ctx: MessageContext): Promise<void> {
     content: replyText,
     eventId: null,
   });
-  if (newSessionId) {
-    process.stderr.write(`[session] saving id=${newSessionId}\n`);
-    await ctx.store.updateRoomSessionId(ctx.roomId, newSessionId);
-  } else {
-    process.stderr.write('[session] no id to save\n');
-  }
 }

@@ -89,30 +89,6 @@ describe('OpenclawClient.streamChat', () => {
     );
   });
 
-  it('includes session_id in request body when provided', async () => {
-    const stream = new ReadableStream();
-    mockFetch.mockResolvedValue({ ok: true, body: stream });
-
-    const client = new OpenclawClient({ url: 'http://localhost:18789', token: 'tok' });
-    await client.streamChat('openclaw/default', [], new AbortController().signal, 'chatcmpl_existing');
-
-    const call = mockFetch.mock.calls[0];
-    const body = JSON.parse((call as any[])[1].body as string);
-    expect(body['session_id']).toBe('chatcmpl_existing');
-  });
-
-  it('omits session_id when not provided', async () => {
-    const stream = new ReadableStream();
-    mockFetch.mockResolvedValue({ ok: true, body: stream });
-
-    const client = new OpenclawClient({ url: 'http://localhost:18789', token: 'tok' });
-    await client.streamChat('openclaw/default', [], new AbortController().signal);
-
-    const call = mockFetch.mock.calls[0];
-    const body = JSON.parse((call as any[])[1].body as string);
-    expect(body).not.toHaveProperty('session_id');
-  });
-
   it('throws when response body is null', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: true,

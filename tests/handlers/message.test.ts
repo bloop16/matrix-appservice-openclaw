@@ -5,7 +5,6 @@ function makeStore(overrides: Record<string, unknown> = {}) {
   return {
     appendMessage: vi.fn().mockResolvedValue(true),
     getRoom: vi.fn().mockResolvedValue({ agent: { deletedAt: null }, sessionId: null }),
-    updateRoomSessionId: vi.fn().mockResolvedValue(undefined),
     ...overrides,
   };
 }
@@ -53,7 +52,7 @@ describe('handleMessage', () => {
   });
 
   it('sends "agent unavailable" notice for deleted agent', async () => {
-    const store = makeStore({ getRoom: vi.fn().mockResolvedValue({ agent: { deletedAt: new Date() }, sessionId: null }) });
+    const store = makeStore({ getRoom: vi.fn().mockResolvedValue({ agent: { deletedAt: new Date() } }) });
     const intent = makeIntent();
     const client = { streamChat: vi.fn() };
 
@@ -67,7 +66,7 @@ describe('handleMessage', () => {
     const store = makeStore();
     const intent = makeIntent();
     const stream = makeStream([
-      'data: {"id":"chatcmpl_abc","choices":[{"delta":{"content":"Hi"}}]}\n',
+      'data: {"choices":[{"delta":{"content":"Hi"}}]}\n',
       'data: [DONE]\n',
     ]);
     const client = { streamChat: vi.fn().mockResolvedValue(stream) };
@@ -78,44 +77,6 @@ describe('handleMessage', () => {
     expect(intent.sendTyping).toHaveBeenCalledWith('!room:example.com', false);
     expect(intent.sendMessage).toHaveBeenCalledWith('!room:example.com', { msgtype: 'm.notice', body: 'Hi' });
     expect(store.appendMessage).toHaveBeenLastCalledWith({ roomId: '!room:example.com', role: 'assistant', content: 'Hi', eventId: null });
-  });
-
-  it('saves sessionId returned by stream', async () => {
-    const store = makeStore();
-    const stream = makeStream([
-      'data: {"id":"chatcmpl_session-x","choices":[{"delta":{"content":"Hi"}}]}\n',
-      'data: [DONE]\n',
-    ]);
-    const client = { streamChat: vi.fn().mockResolvedValue(stream) };
-
-    await handleMessage({ ...BASE_CTX, eventId: 'evtS', store: store as any, client: client as any, bridge: makeBridge() as any });
-
-    expect(store.updateRoomSessionId).toHaveBeenCalledWith('!room:example.com', 'chatcmpl_session-x');
-  });
-
-  it('passes existing sessionId to streamChat', async () => {
-    const store = makeStore({ getRoom: vi.fn().mockResolvedValue({ agent: { deletedAt: null }, sessionId: 'chatcmpl_existing' }) });
-    const stream = makeStream(['data: [DONE]\n']);
-    const client = { streamChat: vi.fn().mockResolvedValue(stream) };
-
-    await handleMessage({ ...BASE_CTX, eventId: 'evtR', store: store as any, client: client as any, bridge: makeBridge() as any });
-
-    expect(client.streamChat).toHaveBeenCalledWith(
-      expect.any(String),
-      expect.any(Array),
-      expect.any(AbortSignal),
-      'chatcmpl_existing',
-    );
-  });
-
-  it('does not save sessionId when stream returns none', async () => {
-    const store = makeStore();
-    const stream = makeStream(['data: {"choices":[{"delta":{"content":"Hi"}}]}\n', 'data: [DONE]\n']);
-    const client = { streamChat: vi.fn().mockResolvedValue(stream) };
-
-    await handleMessage({ ...BASE_CTX, eventId: 'evtN', store: store as any, client: client as any, bridge: makeBridge() as any });
-
-    expect(store.updateRoomSessionId).not.toHaveBeenCalled();
   });
 
   it('sends timeout message on AbortError', async () => {

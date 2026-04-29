@@ -42,15 +42,11 @@ export class OpenclawClient {
     agentId: string,
     messages: ChatMessage[],
     signal: AbortSignal,
-    sessionId?: string,
   ): Promise<ReadableStream<Uint8Array>> {
-    const body: Record<string, unknown> = { model: agentId, messages, stream: true };
-    if (sessionId) body['session_id'] = sessionId;
-    process.stderr.write(`[openclaw] POST /v1/chat/completions session_id=${sessionId ?? 'none'}\n`);
     const res = await fetch(`${this.baseUrl}/v1/chat/completions`, {
       method: 'POST',
       headers: this.headers,
-      body: JSON.stringify(body),
+      body: JSON.stringify({ model: agentId, messages, stream: true }),
       signal,
     });
     if (!res.ok) {
@@ -58,10 +54,6 @@ export class OpenclawClient {
       throw new Error(`Openclaw chat returned ${res.status}: ${text}`);
     }
     if (!res.body) throw new Error('No response body from Openclaw');
-    // Log all response headers to find session ID field
-    res.headers.forEach((value, key) => {
-      process.stderr.write(`[openclaw] header: ${key}=${value}\n`);
-    });
     return res.body;
   }
 }
