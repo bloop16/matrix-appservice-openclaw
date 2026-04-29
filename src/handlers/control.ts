@@ -2,6 +2,9 @@ type Command =
   | { type: 'agents' }
   | { type: 'new'; name: string }
   | { type: 'sessions' }
+  | { type: 'sync' }
+  | { type: 'close'; name: string }
+  | { type: 'status' }
   | { type: 'help' };
 
 export function parseCommand(text: string): Command | null {
@@ -12,8 +15,11 @@ export function parseCommand(text: string): Command | null {
 
   if (sub === 'agents') return { type: 'agents' };
   if (sub === 'sessions') return { type: 'sessions' };
+  if (sub === 'sync') return { type: 'sync' };
+  if (sub === 'status') return { type: 'status' };
   if (sub === 'help') return { type: 'help' };
   if (sub === 'new' && args[1]) return { type: 'new', name: args[1] };
+  if (sub === 'close' && args[1]) return { type: 'close', name: args.slice(1).join(' ') };
   return null;
 }
 

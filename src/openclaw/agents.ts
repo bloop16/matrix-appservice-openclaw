@@ -15,6 +15,7 @@ export function agentIdToMxid(agentId: string, domain: string): string {
 
 export class AgentSyncService {
   private cachedAgentIds = new Set<string>();
+  private lastSyncAt: Date | null = null;
 
   constructor(
     private readonly client: OpenclawClient,
@@ -22,13 +23,14 @@ export class AgentSyncService {
     private readonly domain: string,
   ) {}
 
-  async sync(): Promise<void> {
+  async sync(): Promise<{ added: string[]; removed: string[] }> {
     const [remote, local] = await Promise.all([
       this.client.listAgents(),
       this.store.getActiveAgents(),
     ]);
 
     const remoteIds = new Set(remote.map((a) => a.id));
+    const localIds = new Set(local.map((a) => a.id));
     const now = new Date();
 
     for (const agent of remote) {
@@ -46,7 +48,13 @@ export class AgentSyncService {
       }
     }
 
+    const added = [...remoteIds].filter((id) => !localIds.has(id));
+    const removed = [...localIds].filter((id) => !remoteIds.has(id));
+
     this.cachedAgentIds = remoteIds;
+    this.lastSyncAt = now;
+
+    return { added, removed };
   }
 
   isKnownAgent(agentId: string): boolean {
@@ -55,6 +63,10 @@ export class AgentSyncService {
 
   getKnownAgentIds(): string[] {
     return [...this.cachedAgentIds];
+  }
+
+  getLastSyncAt(): Date | null {
+    return this.lastSyncAt;
   }
 
   startPeriodicSync(intervalMinutes: number): ReturnType<typeof setInterval> {

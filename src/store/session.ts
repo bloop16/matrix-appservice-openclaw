@@ -44,6 +44,11 @@ export class SessionStore {
     await this.db.room.create({ data });
   }
 
+  async deleteRoom(roomId: string): Promise<void> {
+    await this.db.message.deleteMany({ where: { roomId } });
+    await this.db.room.delete({ where: { id: roomId } });
+  }
+
   async getRoomsByUser(matrixUserId: string): Promise<(Room & { agent: Agent })[]> {
     return this.db.room.findMany({ where: { matrixUserId }, include: { agent: true } });
   }

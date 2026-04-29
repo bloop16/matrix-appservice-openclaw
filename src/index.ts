@@ -104,8 +104,45 @@ async function handleControlCommand(
       '!openclaw agents — list agents\n' +
       '!openclaw new <name> — create session room\n' +
       '!openclaw sessions — list your sessions\n' +
+      '!openclaw close <name> — close a session room\n' +
+      '!openclaw sync — re-sync agents from OpenClaw\n' +
+      '!openclaw status — show bridge status\n' +
       '!openclaw help — this message',
     );
+  } else if (cmd.type === 'sync') {
+    await sendNotice(botIntent, roomId, 'Syncing agents…');
+    const { added, removed } = await agentSync.sync();
+    const parts: string[] = [`Sync complete. ${agentSync.getKnownAgentIds().length} agents available.`];
+    if (added.length) parts.push(`New: ${added.map((id) => id.replace(/^openclaw\//, '')).join(', ')}`);
+    if (removed.length) parts.push(`Removed: ${removed.map((id) => id.replace(/^openclaw\//, '')).join(', ')}`);
+    await sendNotice(botIntent, roomId, parts.join('\n'));
+  } else if (cmd.type === 'status') {
+    const agents = agentSync.getKnownAgentIds();
+    const sessions = await store.getRoomsByUser(senderMxid);
+    const lastSync = agentSync.getLastSyncAt();
+    const syncAge = lastSync
+      ? `${Math.round((Date.now() - lastSync.getTime()) / 60_000)} min ago`
+      : 'never';
+    await sendNotice(botIntent, roomId,
+      `Agents: ${agents.length}\n` +
+      `Your sessions: ${sessions.length}\n` +
+      `Last sync: ${syncAge}`,
+    );
+  } else if (cmd.type === 'close') {
+    const rooms = await store.getRoomsByUser(senderMxid);
+    const match = rooms.find((r) =>
+      (r.title ?? '').toLowerCase().includes(cmd.name.toLowerCase()) ||
+      r.agentId.replace(/^openclaw\//, '') === cmd.name,
+    );
+    if (!match) {
+      await sendNotice(botIntent, roomId, `No session matching "${cmd.name}" found.\nUse !openclaw sessions to list.`);
+      return;
+    }
+    const agentMxid = agentIdToMxid(match.agentId, config.homeserver.domain);
+    const agentIntent = bridge.getIntent(agentMxid) as Intent;
+    await agentIntent.leave(match.id);
+    await store.deleteRoom(match.id);
+    await sendNotice(botIntent, roomId, `Closed: ${match.title ?? match.id}`);
   } else if (cmd.type === 'agents') {
     const agents = agentSync.getKnownAgentIds();
     const lines = agents.map((id) =>

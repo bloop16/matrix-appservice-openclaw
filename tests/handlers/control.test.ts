@@ -26,6 +26,26 @@ describe('parseCommand', () => {
     expect(parseCommand('hello world')).toBeNull();
   });
 
+  it('parses !openclaw sync', () => {
+    expect(parseCommand('!openclaw sync')).toEqual({ type: 'sync' });
+  });
+
+  it('parses !openclaw status', () => {
+    expect(parseCommand('!openclaw status')).toEqual({ type: 'status' });
+  });
+
+  it('parses !openclaw close main', () => {
+    expect(parseCommand('!openclaw close main')).toEqual({ type: 'close', name: 'main' });
+  });
+
+  it('parses !openclaw close with multi-word name', () => {
+    expect(parseCommand('!openclaw close my session')).toEqual({ type: 'close', name: 'my session' });
+  });
+
+  it('returns null for !openclaw close without name', () => {
+    expect(parseCommand('!openclaw close')).toBeNull();
+  });
+
   it('returns null for unknown subcommand', () => {
     expect(parseCommand('!openclaw unknown')).toBeNull();
   });
