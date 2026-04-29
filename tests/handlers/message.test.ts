@@ -12,9 +12,8 @@ function makeStore(overrides: Record<string, unknown> = {}) {
 
 function makeIntent(overrides: Record<string, unknown> = {}) {
   return {
-    sendNotice: vi.fn().mockResolvedValue(undefined),
+    sendMessage: vi.fn().mockResolvedValue(undefined),
     sendTyping: vi.fn().mockResolvedValue(undefined),
-    sendText: vi.fn().mockResolvedValue(undefined),
     ...overrides,
   };
 }
@@ -60,7 +59,7 @@ describe('handleMessage', () => {
 
     await handleMessage({ ...BASE_CTX, eventId: 'evt2', store: store as any, client: client as any, bridge: makeBridge(intent) as any });
 
-    expect(intent.sendNotice).toHaveBeenCalledWith('!room:example.com', expect.stringContaining('no longer available'));
+    expect(intent.sendMessage).toHaveBeenCalledWith('!room:example.com', { msgtype: 'm.notice', body: expect.stringContaining('no longer available') });
     expect(client.streamChat).not.toHaveBeenCalled();
   });
 
@@ -77,7 +76,7 @@ describe('handleMessage', () => {
 
     expect(intent.sendTyping).toHaveBeenCalledWith('!room:example.com', true);
     expect(intent.sendTyping).toHaveBeenCalledWith('!room:example.com', false);
-    expect(intent.sendNotice).toHaveBeenCalledWith('!room:example.com', 'Hi');
+    expect(intent.sendMessage).toHaveBeenCalledWith('!room:example.com', { msgtype: 'm.notice', body: 'Hi' });
     expect(store.appendMessage).toHaveBeenLastCalledWith({ roomId: '!room:example.com', role: 'assistant', content: 'Hi', eventId: null });
   });
 
@@ -127,7 +126,7 @@ describe('handleMessage', () => {
 
     await handleMessage({ ...BASE_CTX, eventId: 'evtT', store: store as any, client: client as any, bridge: makeBridge(intent) as any });
 
-    expect(intent.sendNotice).toHaveBeenCalledWith('!room:example.com', '_(request timed out)_');
+    expect(intent.sendMessage).toHaveBeenCalledWith('!room:example.com', { msgtype: 'm.notice', body: '_(request timed out)_' });
   });
 
   it('sends unreachable message on generic error', async () => {
@@ -137,6 +136,6 @@ describe('handleMessage', () => {
 
     await handleMessage({ ...BASE_CTX, eventId: 'evtE', store: store as any, client: client as any, bridge: makeBridge(intent) as any });
 
-    expect(intent.sendNotice).toHaveBeenCalledWith('!room:example.com', 'Openclaw is not reachable right now.');
+    expect(intent.sendMessage).toHaveBeenCalledWith('!room:example.com', { msgtype: 'm.notice', body: 'Openclaw is not reachable right now.' });
   });
 });

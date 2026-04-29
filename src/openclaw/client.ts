@@ -46,6 +46,7 @@ export class OpenclawClient {
   ): Promise<ReadableStream<Uint8Array>> {
     const body: Record<string, unknown> = { model: agentId, messages, stream: true };
     if (sessionId) body['session_id'] = sessionId;
+    process.stderr.write(`[openclaw] POST /v1/chat/completions session_id=${sessionId ?? 'none'}\n`);
     const res = await fetch(`${this.baseUrl}/v1/chat/completions`, {
       method: 'POST',
       headers: this.headers,

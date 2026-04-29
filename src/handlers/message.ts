@@ -4,9 +4,8 @@ import type { SessionStore } from '../store/session.js';
 import type { OpenclawClient } from '../openclaw/client.js';
 
 interface Intent {
-  sendNotice: (roomId: string, text: string) => Promise<void>;
+  sendMessage: (roomId: string, content: Record<string, unknown>) => Promise<unknown>;
   sendTyping: (roomId: string, typing: boolean) => Promise<void>;
-  sendText: (roomId: string, text: string) => Promise<void>;
 }
 
 interface Bridge {
@@ -40,7 +39,7 @@ export async function handleMessage(ctx: MessageContext): Promise<void> {
   const intent = ctx.bridge.getIntent(ctx.agentMxid);
 
   if (room?.agent?.deletedAt) {
-    await intent.sendNotice(ctx.roomId, 'This agent is no longer available.');
+    await intent.sendMessage(ctx.roomId, { msgtype: 'm.notice', body: 'This agent is no longer available.' });
     return;
   }
 
@@ -49,6 +48,7 @@ export async function handleMessage(ctx: MessageContext): Promise<void> {
   const localpart = ctx.agentMxid.slice(1, ctx.agentMxid.indexOf(':'));
   const agentId = localpartToAgentId(localpart);
   const existingSessionId = room?.sessionId ?? undefined;
+  process.stderr.write(`[session] room=${ctx.roomId} stored=${existingSessionId ?? 'none'}\n`);
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), ctx.timeoutSeconds * 1000);
@@ -61,6 +61,7 @@ export async function handleMessage(ctx: MessageContext): Promise<void> {
     const stream = await ctx.client.streamChat(agentId, messages, controller.signal, existingSessionId);
     const result = await collectStream(stream);
     newSessionId = result.sessionId;
+    process.stderr.write(`[session] received id=${newSessionId ?? 'none'}\n`);
     replyText = result.interrupted
       ? `${result.text} _(response was cut short)_`
       : result.text;
@@ -74,7 +75,7 @@ export async function handleMessage(ctx: MessageContext): Promise<void> {
     await intent.sendTyping(ctx.roomId, false);
   }
 
-  await intent.sendNotice(ctx.roomId, replyText);
+  await intent.sendMessage(ctx.roomId, { msgtype: 'm.notice', body: replyText });
   await ctx.store.appendMessage({
     roomId: ctx.roomId,
     role: 'assistant',
@@ -82,6 +83,9 @@ export async function handleMessage(ctx: MessageContext): Promise<void> {
     eventId: null,
   });
   if (newSessionId) {
+    process.stderr.write(`[session] saving id=${newSessionId}\n`);
     await ctx.store.updateRoomSessionId(ctx.roomId, newSessionId);
+  } else {
+    process.stderr.write('[session] no id to save\n');
   }
 }
