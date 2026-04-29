@@ -4,8 +4,9 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@prisma/client';
 import { SessionStore } from '../../src/store/session.js';
 
-const pool = new Pool({ connectionString: process.env['DATABASE_URL'] });
-const prisma = new PrismaClient({ adapter: new PrismaPg(pool) });
+const DATABASE_URL = process.env['DATABASE_URL'];
+const pool = DATABASE_URL ? new Pool({ connectionString: DATABASE_URL }) : null;
+const prisma = pool ? new PrismaClient({ adapter: new PrismaPg(pool) }) : null;
 let store: SessionStore;
 
 beforeAll(async () => {
