@@ -1,6 +1,13 @@
 import type { OpenclawClient } from './client.js';
 import type { SessionStore } from '../store/session.js';
 
+// Returns true when the agent can be represented as a Matrix virtual user.
+// Agents without a sub-name (e.g. bare "openclaw") produce localpart "openclaw"
+// which lies outside our @openclaw-* namespace and cannot be bridged.
+export function isVirtualUserAgent(agentId: string): boolean {
+  return agentId.includes('/');
+}
+
 export function agentIdToLocalpart(agentId: string): string {
   return agentId.replace(/^openclaw\//, 'openclaw-');
 }
@@ -29,7 +36,8 @@ export class AgentSyncService {
       this.store.getActiveAgents(),
     ]);
 
-    const remoteIds = new Set(remote.map((a) => a.id));
+    // Only track agents that can be represented as Matrix virtual users
+    const remoteIds = new Set(remote.map((a) => a.id).filter(isVirtualUserAgent));
     const localIds = new Set(local.map((a) => a.id));
     const now = new Date();
 

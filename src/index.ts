@@ -6,7 +6,7 @@ import { loadConfig } from './config.js';
 import { createBridge } from './bridge.js';
 import { SessionStore } from './store/session.js';
 import { OpenclawClient } from './openclaw/client.js';
-import { AgentSyncService, agentIdToMxid } from './openclaw/agents.js';
+import { AgentSyncService, agentIdToMxid, isVirtualUserAgent } from './openclaw/agents.js';
 import { RoomQueue } from './queue.js';
 import { handleInvite } from './handlers/invite.js';
 import { handleMessage } from './handlers/message.js';
