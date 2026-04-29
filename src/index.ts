@@ -168,13 +168,11 @@ async function handleControlCommand(
     }
     const agentMxid = agentIdToMxid(agentId, config.homeserver.domain);
     const title = `[${cmd.name}] Session ${new Date().toISOString().slice(0, 16).replace('T', ' ')}`;
-    process.stderr.write(`[new] creating room as ${agentMxid}, inviting ${senderMxid}\n`);
     const agentIntent = bridge.getIntent(agentMxid) as Intent;
     const newRoom = await agentIntent.createRoom({
       createAsClient: true,
       options: { name: title, invite: [senderMxid] },
     });
-    process.stderr.write(`[new] room created: ${JSON.stringify(newRoom)}\n`);
     await store.createRoom({ id: (newRoom as { room_id: string }).room_id, agentId, matrixUserId: senderMxid, title });
     await sendNotice(botIntent, roomId, `Created room: ${title}`);
   }
@@ -207,9 +205,24 @@ async function ensureControlRoom(): Promise<void> {
   await store.setAppState('controlRoomId', controlRoomId!);
 }
 
+async function preRegisterAgents(): Promise<void> {
+  // Cache each agent intent as registered so ensureRegistered() is skipped
+  // during normal operation. Without this, every first message triggers a
+  // /register call that Synapse rejects with M_USER_IN_USE (handled but noisy).
+  for (const agentId of agentSync.getKnownAgentIds()) {
+    const mxid = agentIdToMxid(agentId, config.homeserver.domain);
+    try {
+      await (bridge.getIntent(mxid) as Intent).ensureRegistered();
+    } catch {
+      // non-fatal: new agents register on first use
+    }
+  }
+}
+
 async function main(): Promise<void> {
   await agentSync.sync();
   await bridge.initialise();
+  await preRegisterAgents();
   await ensureControlRoom();
   await bridge.listen(config.appservice.port, config.appservice.bindAddress);
   const _syncHandle = agentSync.startPeriodicSync(config.openclaw.agentSyncIntervalMinutes);
