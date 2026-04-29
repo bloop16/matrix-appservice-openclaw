@@ -56,7 +56,6 @@ export class OpenclawClient {
       body: JSON.stringify({ model: agentId, messages, stream: true, user: sessionKey }),
       signal,
     });
-    process.stderr.write(`[openclaw] ${res.status} session=${sessionKey} msgs=${messages.length}\n`);
     if (!res.ok) {
       const text = await res.text();
       throw new Error(`Openclaw chat returned ${res.status}: ${text}`);

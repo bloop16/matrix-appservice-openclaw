@@ -43,7 +43,6 @@ export async function handleMessage(ctx: MessageContext): Promise<void> {
   }
 
   const messages = [{ role: 'user' as const, content: ctx.body }];
-  process.stderr.write(`[msg] room=${ctx.roomId} sender=${ctx.senderMxid} body="${ctx.body.slice(0, 80)}"\n`);
   const localpart = ctx.agentMxid.slice(1, ctx.agentMxid.indexOf(':'));
   const agentId = localpartToAgentId(localpart);
 
@@ -59,7 +58,6 @@ export async function handleMessage(ctx: MessageContext): Promise<void> {
     replyText = result.interrupted
       ? `${result.text} _(response was cut short)_`
       : result.text;
-    process.stderr.write(`[msg] reply="${replyText.slice(0, 80)}"\n`);
   } catch (err: unknown) {
     const isAbort = err instanceof Error && err.name === 'AbortError';
     replyText = isAbort
