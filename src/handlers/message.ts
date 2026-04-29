@@ -53,7 +53,7 @@ export async function handleMessage(ctx: MessageContext): Promise<void> {
 
   try {
     await intent.sendTyping(ctx.roomId, true);
-    const stream = await ctx.client.streamChat(agentId, messages, controller.signal);
+    const stream = await ctx.client.streamChat(agentId, messages, controller.signal, ctx.roomId);
     const result = await collectStream(stream);
     replyText = result.interrupted
       ? `${result.text} _(response was cut short)_`

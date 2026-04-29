@@ -76,6 +76,7 @@ describe('handleMessage', () => {
     expect(intent.sendTyping).toHaveBeenCalledWith('!room:example.com', true);
     expect(intent.sendTyping).toHaveBeenCalledWith('!room:example.com', false);
     expect(intent.sendMessage).toHaveBeenCalledWith('!room:example.com', { msgtype: 'm.notice', body: 'Hi' });
+    expect(client.streamChat).toHaveBeenCalledWith(expect.any(String), expect.any(Array), expect.any(AbortSignal), '!room:example.com');
     expect(store.appendMessage).toHaveBeenLastCalledWith({ roomId: '!room:example.com', role: 'assistant', content: 'Hi', eventId: null });
   });
 

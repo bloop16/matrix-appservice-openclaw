@@ -50,7 +50,7 @@ describe('OpenclawClient.streamChat', () => {
     const client = new OpenclawClient({ url: 'http://localhost:18789', token: 'tok' });
     const messages = [{ role: 'user' as const, content: 'Hello' }];
     const controller = new AbortController();
-    const result = await client.streamChat('openclaw/default', messages, controller.signal);
+    const result = await client.streamChat('openclaw/default', messages, controller.signal, '!room:example.com');
 
     expect(result).toBe(stream);
     expect(mockFetch).toHaveBeenCalledWith(
@@ -60,8 +60,9 @@ describe('OpenclawClient.streamChat', () => {
         headers: expect.objectContaining({
           Authorization: 'Bearer tok',
           'Content-Type': 'application/json',
+          'x-openclaw-session-key': 'matrix:!room:example.com',
         }),
-        body: JSON.stringify({ model: 'openclaw/default', messages, stream: true }),
+        body: JSON.stringify({ model: 'openclaw/default', messages, stream: true, user: '!room:example.com' }),
       }),
     );
   });
@@ -71,7 +72,7 @@ describe('OpenclawClient.streamChat', () => {
     const client = new OpenclawClient({ url: 'http://localhost:18789', token: 'tok' });
     const controller = new AbortController();
     await expect(
-      client.streamChat('openclaw/default', [], controller.signal),
+      client.streamChat('openclaw/default', [], controller.signal, '!room:example.com'),
     ).rejects.toThrow('403');
   });
 
@@ -81,7 +82,7 @@ describe('OpenclawClient.streamChat', () => {
 
     const client = new OpenclawClient({ url: 'http://localhost:18789', token: 'tok' });
     const controller = new AbortController();
-    await client.streamChat('openclaw/default', [], controller.signal);
+    await client.streamChat('openclaw/default', [], controller.signal, '!room:example.com');
 
     expect(mockFetch).toHaveBeenCalledWith(
       expect.any(String),

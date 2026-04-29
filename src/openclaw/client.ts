@@ -42,11 +42,18 @@ export class OpenclawClient {
     agentId: string,
     messages: ChatMessage[],
     signal: AbortSignal,
+    sessionKey: string,
   ): Promise<ReadableStream<Uint8Array>> {
     const res = await fetch(`${this.baseUrl}/v1/chat/completions`, {
       method: 'POST',
-      headers: this.headers,
-      body: JSON.stringify({ model: agentId, messages, stream: true }),
+      headers: {
+        ...this.headers,
+        // Route all requests from the same Matrix room to the same OpenClaw session.
+        // x-openclaw-session-key is the primary mechanism; user is the standard
+        // OpenAI fallback that OpenClaw also uses to derive a stable session key.
+        'x-openclaw-session-key': `matrix:${sessionKey}`,
+      },
+      body: JSON.stringify({ model: agentId, messages, stream: true, user: sessionKey }),
       signal,
     });
     if (!res.ok) {
