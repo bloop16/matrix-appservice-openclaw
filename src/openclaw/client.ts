@@ -58,6 +58,10 @@ export class OpenclawClient {
       throw new Error(`Openclaw chat returned ${res.status}: ${text}`);
     }
     if (!res.body) throw new Error('No response body from Openclaw');
+    // Log all response headers to find session ID field
+    res.headers.forEach((value, key) => {
+      process.stderr.write(`[openclaw] header: ${key}=${value}\n`);
+    });
     return res.body;
   }
 }
