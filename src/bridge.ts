@@ -4,18 +4,13 @@ import { readFileSync } from 'fs';
 import { load } from 'js-yaml';
 import type { Config } from './config.js';
 
-// Bridge.getIntent() overrides intentOptions.registered with
-// membershipCache.isUserRegistered(), which is always false on a fresh start.
-// _ensureJoined() also checks getMemberEntry() — null causes a re-join attempt
-// via the bot-sdk which can fail for existing users.
-// Appservice virtual users are provisioned and joined by the homeserver —
-// returning true/join as defaults avoids unnecessary re-registration and
-// re-join attempts after every service restart.
-class AlwaysRegisteredCache extends MembershipCache {
-  override isUserRegistered(_userId: string): boolean {
-    return true;
-  }
-
+// _ensureJoined() checks getMemberEntry() — null on a fresh start causes a
+// re-join attempt via the bot-sdk's ensureRegisteredAndJoined(), which fails
+// for existing users that Synapse considers already joined.
+// Returning 'join' as default skips the re-join without preventing actual
+// registration: isUserRegistered() is intentionally NOT overridden so that
+// new virtual users get properly registered on first use.
+class AlwaysJoinedCache extends MembershipCache {
   override getMemberEntry(roomId: string, userId: string): UserMembership {
     return super.getMemberEntry(roomId, userId) ?? 'join';
   }
@@ -33,7 +28,7 @@ export function createBridge(
     homeserverUrl: config.homeserver.url,
     domain: config.homeserver.domain,
     registration,
-    membershipCache: new AlwaysRegisteredCache(),
+    membershipCache: new AlwaysJoinedCache(),
     controller: {
       onEvent,
       onUserQuery: async () => ({}),
